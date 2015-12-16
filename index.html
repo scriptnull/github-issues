@@ -9,17 +9,19 @@
   </head>
   <body>
 
+    <!-- Github Repo Name Input Box -->
     <div class="col-lg-6 col-lg-offset-3">
       <div class="panel"  style="background-color: #F5F5F5;" >
         <div class="panel-body">
           <div class="col-lg-10">
             <input type="text" id="txtRepoName" class="form-control" placeholder="Type a Github repository name ( organisation/repo or user/repo )" />
           </div>
-          <button onclick="loadDetails();" class="col-lg-2 btn btn-primary">Get Issues</button>
+          <button onclick="loadDetails();" class="col-lg-2 btn btn-primary">Get Details</button>
         </div>
       </div>
     </div>
 
+    <!-- Details to be shown -->
     <div class="col-lg-6 col-lg-offset-3">
       <div class="panel panel-default" id="panelDetails" style="visibility : hidden;">
         <div class="panel-heading" style="text-align : center;">
@@ -45,12 +47,17 @@
     <script type="text/javascript">
       (function(root){
 
-        //Api CLient
+        //Api CLient Singleton
         var ApiClient = (function(){
            var instance;
+
+           //Api Client Constructor
            var init = function(){
              var BASE_URL = "https://api.github.com/search/issues?q=";
              return {
+               /**
+               * Converts JSON to Github API style query strings
+               */
                queryFormatter : function(obj){
                  if(!obj)return '';
                  var queryArr = [];
@@ -61,12 +68,18 @@
                  }
                  return queryArr.join('+');
                } ,
+               /**
+               * Calls the Github Search Api for searching Issues
+               * Returns a promise to handle results
+               */
                getIssues : function(queryObj){
-                 console.log(BASE_URL + this.queryFormatter(queryObj));
+                 //console.log(BASE_URL + this.queryFormatter(queryObj)); //uncomment to check the request URLS
                  return $.get(BASE_URL + this.queryFormatter(queryObj));
                }
              };
            };
+
+           //exposing the Singleton via getInstance method
            return{
              getInstance : function(){
                if(!instance){
@@ -77,10 +90,16 @@
            };
         })();
 
+        /**
+        * Gives ISODate of the day that is x days from now.
+        */
         var getISODateOfXDaysfromNow = function(x){
           return moment().subtract(x, 'days').toISOString();
         };
 
+        /**
+        * Get Request Objects for various details.
+        */
         var getRequests = function(repo){
           return [{
             query : {
@@ -121,18 +140,22 @@
         };
 
         var progressTrack = 0 ;
+        var loading = document.getElementById('loading');
 
+        /**
+        * Updates the progress in the view .
+        */
         var updateProgress = function(len){
           progressTrack++;
           document.getElementById('loading').innerHTML = "Loading ( " + progressTrack + " / " + len + " ) ";
           if(len === progressTrack){
-            var loading = document.getElementById('loading');
             loading.style.visibility = "hidden";
-//            loading.parentElement.removeChild(loading);
           }
         };
 
-        //Total Number of Open issues
+        /**
+        * Makes HTTPS requests via ApiCient for given request object and updates the UI
+        */
         var syncCount = function(requestObj , i , arr){
           client = ApiClient.getInstance();
           client
@@ -149,21 +172,33 @@
             })
             .error(function(error){
               console.log(error);
+              alert('Something Went wrong !');
+              window.location.reload();
             });
         };
 
+        /**
+        * OnClick event for Get Details button
+        */
         root.loadDetails = function(){
+          //get repo name
           var reponame = document.getElementById('txtRepoName').value;
+
+          //validate repo name
           if(!reponame){
             alert('Please enter valid repo details');
             return;
           }
+
+          //update views for showing progress
           document.getElementById('panelDetails').style.visibility = "";
           var loading = document.getElementById('loading');
           loading.style.visibility = "";
           var requests = getRequests(reponame);
           progressTrack= -1 ;
           updateProgress(requests.length);
+
+          //make HTTPS requests via ApiClient and update the details
           requests.forEach(syncCount);
         }
 
