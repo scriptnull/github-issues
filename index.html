@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Github Issues</title>
+  </head>
+  <body>
+
+
+    <script src="js/node_modules/moment/min/moment.min.js" charset="utf-8"></script>
+    <script src="js/node_modules/jquery/dist/jquery.js" charset="utf-8"></script>
+    <script type="text/javascript">
+      (function(){
+
+        //Api CLient
+        var ApiClient = (function(){
+           var instance;
+           var init = function(){
+             var BASE_URL = "https://api.github.com/search/issues?q=";
+             return {
+               queryFormatter : function(obj){
+                 if(!obj)return '';
+                 var queryArr = [];
+                 for(var prop in obj){
+                   if(obj.hasOwnProperty(prop)){
+                     queryArr.push(prop + ":" + obj[prop]);
+                   }
+                 }
+                 return queryArr.join('+');
+               } ,
+               getIssues : function(queryObj){
+                 console.log(BASE_URL + this.queryFormatter(queryObj));
+                 return $.get(BASE_URL + this.queryFormatter(queryObj));
+               }
+             };
+           };
+           return{
+             getInstance : function(){
+               if(!instance){
+                 instance = new init();
+               }
+               return instance;
+             }
+           };
+        })();
+
+        var getISODateOfXDaysfromNow = function(x){
+          return moment().subtract(x, 'days').toISOString();
+        };
+
+        var repo = 'Shippable/support';
+
+        var requests = [{
+          query : {
+            repo : repo ,
+            state : 'open' ,
+            is : 'issue'
+          } ,
+          description : 'Total number of open issues'
+        } , {
+          query : {
+            repo : repo ,
+            is : 'issue' ,
+            state : 'open' ,
+            created : '>=' + getISODateOfXDaysfromNow(1)
+          } ,
+          description : 'Number of open issues that were opened in the last 24 hours'
+        } , {
+          query : {
+            repo : repo ,
+            is : 'issue' ,
+            state : 'open' ,
+            created : getISODateOfXDaysfromNow(7) + '..' + getISODateOfXDaysfromNow(1)
+          } ,
+          description : 'Number of open issues that were opened more than 24 hours ago but less than 7 days ago'
+        } , {
+          query : {
+            repo : repo ,
+            is : 'issue' ,
+            state : 'open' ,
+            created : '<' + getISODateOfXDaysfromNow(7)
+          } ,
+          description : 'Number of open issues that were opened more than 7 days ago'
+        }];
+
+        //Total Number of Open issues
+        var syncCount = function(requestObj){
+          client = ApiClient.getInstance();
+          client
+            .getIssues(requestObj.query)
+            .success(function(data){
+              console.log(requestObj.description + ' is ' +data.total_count);
+
+            })
+            .error(function(error){
+              console.log(error);
+            });
+        };
+
+        requests.forEach(syncCount);
+
+      })();
+    </script>
+  </body>
+</html>
