@@ -100,7 +100,7 @@
   */
   var updateProgress = function(len){
     progressTrack++;
-    document.getElementById('loading').innerHTML = "Loading ( " + progressTrack + " / " + len + " ) ";
+    loading.innerHTML = "Loading ( " + progressTrack + " / " + len + " ) ";
     if(len === progressTrack){
       loading.style.visibility = "hidden";
     }
@@ -135,17 +135,18 @@
   */
   root.loadDetails = function(){
     //get repo name
-    var reponame = document.getElementById('txtRepoName').value;
-
+    var reponameVal = document.getElementById('txtRepoName').value;
+    var reponameArr = reponameVal.split('/');
+    var reponame;
     //validate repo name
-    if(!reponame){
+    if(reponameArr.length !== 5 || reponameArr[2] !== "github.com"){
       alert('Please enter valid repo details');
       return;
     }
+    var reponame = reponameArr.slice(3).join('/');
 
     //update views for showing progress
     document.getElementById('panelDetails').style.visibility = "";
-    var loading = document.getElementById('loading');
     loading.style.visibility = "";
     var requests = getRequests(reponame);
     progressTrack= -1 ;
@@ -153,6 +154,6 @@
 
     //make HTTPS requests via ApiClient and update the details
     requests.forEach(syncCount);
-  }
+  };
 
 })(window);
