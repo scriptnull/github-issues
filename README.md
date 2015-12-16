@@ -8,9 +8,9 @@ Exercise for talking with Github Search API. The App is hosted on github pages a
 - Moment.js - For Performing date operations easily.
 
 ### Solution 
-- The core logic of the app can be found in [js/script.js](https://github.com/scriptnull/github-issues/blob/gh-pages/js/script.js) file. 
-
+The core logic of the app can be found in [js/script.js](https://github.com/scriptnull/github-issues/blob/gh-pages/js/script.js) file. 
 To get the work done , I have split up the logic into few sub tasks.
+
 1. Get input link and validate.
 2. Accessing the Github API.
 3. Show Details on the Web page.
