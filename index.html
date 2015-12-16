@@ -3,14 +3,47 @@
   <head>
     <meta charset="utf-8">
     <title>Github Issues</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" media="screen" charset="utf-8">
+    <style>
+    </style>
   </head>
   <body>
 
+    <div class="col-lg-6 col-lg-offset-3">
+      <div class="panel"  style="background-color: #F5F5F5;" >
+        <div class="panel-body">
+          <div class="col-lg-10">
+            <input type="text" id="txtRepoName" class="form-control" placeholder="Type a Github repository name ( organisation/repo or user/repo )" />
+          </div>
+          <button onclick="loadDetails();" class="col-lg-2 btn btn-primary">Get Issues</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6 col-lg-offset-3">
+      <div class="panel panel-default" id="panelDetails" style="visibility : hidden;">
+        <div class="panel-heading" style="text-align : center;">
+          Details of Issues
+        </div>
+        <div class="panel-body">
+          <h3 id="loading" class="col-lg-12" style="text-align : center;"></h3>
+          <table class="table">
+            <tbody>
+            <tr id="tr1"></tr>
+            <tr id="tr2"></tr>
+            <tr id="tr3"></tr>
+            <tr id="tr4"></tr>
+          </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
 
     <script src="js/node_modules/moment/min/moment.min.js" charset="utf-8"></script>
     <script src="js/node_modules/jquery/dist/jquery.js" charset="utf-8"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" charset="utf-8"></script>
     <script type="text/javascript">
-      (function(){
+      (function(root){
 
         //Api CLient
         var ApiClient = (function(){
@@ -48,58 +81,93 @@
           return moment().subtract(x, 'days').toISOString();
         };
 
-        var repo = 'Shippable/support';
+        var getRequests = function(repo){
+          return [{
+            query : {
+              repo : repo ,
+              state : 'open' ,
+              is : 'issue'
+            } ,
+            description : 'Total number of open issues' ,
+            viewId : 'tr1'
+          } , {
+            query : {
+              repo : repo ,
+              is : 'issue' ,
+              state : 'open' ,
+              created : '>=' + getISODateOfXDaysfromNow(1)
+            } ,
+            description : 'Number of open issues that were opened in the last 24 hours' ,
+            viewId : 'tr2'
+          } , {
+            query : {
+              repo : repo ,
+              is : 'issue' ,
+              state : 'open' ,
+              created : getISODateOfXDaysfromNow(7) + '..' + getISODateOfXDaysfromNow(1)
+            } ,
+            description : 'Number of open issues that were opened more than 24 hours ago but less than 7 days ago' ,
+            viewId : 'tr3'
+          } , {
+            query : {
+              repo : repo ,
+              is : 'issue' ,
+              state : 'open' ,
+              created : '<' + getISODateOfXDaysfromNow(7)
+            } ,
+            description : 'Number of open issues that were opened more than 7 days ago' ,
+            viewId : 'tr4'
+          }];
+        };
 
-        var requests = [{
-          query : {
-            repo : repo ,
-            state : 'open' ,
-            is : 'issue'
-          } ,
-          description : 'Total number of open issues'
-        } , {
-          query : {
-            repo : repo ,
-            is : 'issue' ,
-            state : 'open' ,
-            created : '>=' + getISODateOfXDaysfromNow(1)
-          } ,
-          description : 'Number of open issues that were opened in the last 24 hours'
-        } , {
-          query : {
-            repo : repo ,
-            is : 'issue' ,
-            state : 'open' ,
-            created : getISODateOfXDaysfromNow(7) + '..' + getISODateOfXDaysfromNow(1)
-          } ,
-          description : 'Number of open issues that were opened more than 24 hours ago but less than 7 days ago'
-        } , {
-          query : {
-            repo : repo ,
-            is : 'issue' ,
-            state : 'open' ,
-            created : '<' + getISODateOfXDaysfromNow(7)
-          } ,
-          description : 'Number of open issues that were opened more than 7 days ago'
-        }];
+        var progressTrack = 0 ;
+
+        var updateProgress = function(len){
+          progressTrack++;
+          document.getElementById('loading').innerHTML = "Loading ( " + progressTrack + " / " + len + " ) ";
+          if(len === progressTrack){
+            var loading = document.getElementById('loading');
+            loading.style.visibility = "hidden";
+//            loading.parentElement.removeChild(loading);
+          }
+        };
 
         //Total Number of Open issues
-        var syncCount = function(requestObj){
+        var syncCount = function(requestObj , i , arr){
           client = ApiClient.getInstance();
           client
             .getIssues(requestObj.query)
             .success(function(data){
-              console.log(requestObj.description + ' is ' +data.total_count);
-
+              var des = document.createElement('td') , count = document.createElement('td');
+              des.innerHTML = requestObj.description;
+              count.innerHTML =  data.total_count;
+              var row = document.getElementById(requestObj.viewId);
+              row.innerHTML = '';
+              row.appendChild(des);
+              row.appendChild(count);
+              updateProgress(arr.length)
             })
             .error(function(error){
               console.log(error);
             });
         };
 
-        requests.forEach(syncCount);
+        root.loadDetails = function(){
+          var reponame = document.getElementById('txtRepoName').value;
+          if(!reponame){
+            alert('Please enter valid repo details');
+            return;
+          }
+          document.getElementById('panelDetails').style.visibility = "";
+          var loading = document.getElementById('loading');
+          loading.style.visibility = "";
+          var requests = getRequests(reponame);
+          progressTrack= -1 ;
+          updateProgress(requests.length);
+          requests.forEach(syncCount);
+        }
 
-      })();
+      })(window);
     </script>
   </body>
 </html>
